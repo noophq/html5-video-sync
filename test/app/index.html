@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Sync html5 videos</h1>
+    <video
+        style="background: #000"
+        id="main-video"
+        width="640"
+        controls>
+    </video>
+    <video
+        style="background: #000"
+        id="synced-video"
+        width="640">
+    </video>
+
+    <!-- Shaka Player compiled library: -->
+    <script src="/node_modules/shaka-player/dist/shaka-player.compiled.js"></script>
+
+    <!-- Your application source: -->
+    <script src="/dist/bundle.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

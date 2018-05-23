@@ -1,0 +1,16 @@
+esudo: false
+branches:
+  only:
+  - master
+  - develop
+language: node_js
+node_js:
+- '7'
+before_install:
+- npm -g install npm@latest
+install:
+- npm install
+script:
+- npm run lint
+- npm run test
+- npm run build

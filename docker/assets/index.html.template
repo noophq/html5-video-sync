@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base href="%%BASE_URL%%" />
+  </head>
+  <body>
+    <h1>Full TTML implementation in DASH</h1>
+    <video
+      id="video"
+      width="640"
+      poster="//shaka-player-demo.appspot.com/assets/poster.jpg"
+      controls autoplay>
+    </video>
+    <div>
+      <button id="video-fullscreen">Fullscreen</button>
+    </div>
+    <script src="shaka-player.compiled.js"></script>
+    <!-- Your application source: -->
+    <script src="bundle.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
