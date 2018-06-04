@@ -10,6 +10,8 @@
 
 import * as raf from "raf";
 
+import { EventRegistry } from "./event-registry";
+
 interface VideoAction {
     timecode: number, // in milliseconds
     action: string;
@@ -19,6 +21,7 @@ export class VideoSynchronizer {
     private mainVideoElement: HTMLVideoElement;
     private syncedVideoElements: HTMLVideoElement[];
 
+    private eventRegistry: EventRegistry;
     private lastActions: VideoAction[];
     private synchronizing: boolean;
     private syncDeviationThreshold: number;
@@ -31,6 +34,8 @@ export class VideoSynchronizer {
         this.mainVideoElement = mainVideoElement;
         this.syncedVideoElements = syncedVideoElements;
 
+        this.eventRegistry = new EventRegistry();
+
         this.syncDeviationThreshold = 80;
         this.lastActions = [];
         this.rafCountSinceLastSyncFix = 0;
@@ -42,19 +47,23 @@ export class VideoSynchronizer {
         this.handleSynchronized = this.handleSynchronized.bind(this);
         this.handleSynchronizing = this.handleSynchronizing.bind(this);
         this.handleFixVideoSynchronization = this.handleFixVideoSynchronization.bind(this);
+        this.handleRateChange = this.handleRateChange.bind(this);
 
         this.initialize();
     }
 
     private initialize() {
-        this.addMainVideoListeners();
-        this.addSyncedVideoListeners();
+        this.addListeners();
         this.refresh();
+
+        // Initi playback rate
+        for (const element of this.syncedVideoElements) {
+            element.playbackRate = this.mainVideoElement.playbackRate;
+        }
     }
 
     public destroy() {
-        this.removeMainVideoListeners();
-        this.removeSyncedVideoListeners();
+        this.removeListeners();
     }
 
     private dispatchEvent(element: HTMLElement, eventType: string) {
@@ -127,7 +136,6 @@ export class VideoSynchronizer {
      * Pause all videos
      */
     private pauseAll() {
-        console.log("pause all");
         this.syncedVideoElements.forEach((element) => {
             element.pause();
         });
@@ -142,7 +150,6 @@ export class VideoSynchronizer {
      * Play all videos
      */
     private playAll() {
-        console.log("play all");
         if (this.mainVideoElement.paused) {
             // Avoid event loops
             this.mainVideoElement.play();
@@ -209,7 +216,13 @@ export class VideoSynchronizer {
     }
 
     private handleSynchronizing() {
-        console.log("synchronizing");
+        // Synchronizing
+    }
+
+    private handleRateChange(event: any) {
+        for (const element of this.syncedVideoElements) {
+            element.playbackRate = this.mainVideoElement.playbackRate;
+        }
     }
 
     /**
@@ -241,8 +254,6 @@ export class VideoSynchronizer {
     }
 
     private handleSynchronized() {
-        console.log("synchronized", this.lastActions);
-
         if (this.wasPlayingBeforeSync()) {
             this.mainVideoElement.play();
         } else {
@@ -251,7 +262,6 @@ export class VideoSynchronizer {
     }
 
     private handleSeek() {
-        console.log("#seek");
         this.registerAction("seek");
     }
 
@@ -269,75 +279,48 @@ export class VideoSynchronizer {
         this.pauseAll();
     }
 
-    private addMainVideoListeners() {
-        this.mainVideoElement.addEventListener(
+    private addListeners() {
+        this.eventRegistry.register(
+            this.mainVideoElement,
             "synchronizing",
             this.handleSynchronizing
         );
-        this.mainVideoElement.addEventListener(
+        this.eventRegistry.register(
+            this.mainVideoElement,
             "synchronized",
             this.handleSynchronized
         );
-        this.mainVideoElement.addEventListener(
+        this.eventRegistry.register(
+            this.mainVideoElement,
             "play",
             this.handlePlay
         );
-        this.mainVideoElement.addEventListener(
+        this.eventRegistry.register(
+            this.mainVideoElement,
             "pause",
             this.handlePause
         );
-        this.mainVideoElement.addEventListener(
+        this.eventRegistry.register(
+            this.mainVideoElement,
             "seeking",
             this.handleSeek,
         );
-    }
+        this.eventRegistry.register(
+            this.mainVideoElement,
+            "ratechange",
+            this.handleRateChange,
+        );
 
-    private removeMainVideoListeners() {
-        this.mainVideoElement.removeEventListener(
-            "synchronizing",
-            this.handleSynchronizing
-        );
-        this.mainVideoElement.removeEventListener(
-            "synchronized",
-            this.handleSynchronized
-        );
-        this.mainVideoElement.removeEventListener(
-            "play",
-            this.handlePlay
-        );
-        this.mainVideoElement.removeEventListener(
-            "pause",
-            this.handlePause
-        );
-        this.mainVideoElement.removeEventListener(
-            "seeking",
-            this.handleSeek,
-        );
-    }
-
-    private addSyncedVideoListener(videoElement: HTMLVideoElement) {
-        videoElement.addEventListener(
-            "fix-synchronization",
-            this.handleFixVideoSynchronization,
-        );
-    }
-
-    private addSyncedVideoListeners() {
         this.syncedVideoElements.forEach((element) => {
-            this.addSyncedVideoListener(element);
+            this.eventRegistry.register(
+                element,
+                "fix-synchronization",
+                this.handleFixVideoSynchronization,
+            );
         });
     }
 
-    private removeSyncedVideoListener(videoElement: HTMLVideoElement) {
-        videoElement.removeEventListener(
-            "fix-synchronization",
-            this.handleFixVideoSynchronization,
-        );
-    }
-
-    private removeSyncedVideoListeners() {
-        this.syncedVideoElements.forEach((element) => {
-            this.removeSyncedVideoListener(element);
-        });
+    private removeListeners() {
+        this.eventRegistry.unregisterAll();
     }
 }

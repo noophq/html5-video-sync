@@ -23,9 +23,21 @@ function initPlayers() {
     // Create player instances.
     var mainVideo = document.getElementById("main-video");
     var mainPlayer = new shaka.Player(mainVideo);
+    mainPlayer.configure({
+        streaming: {
+            rebufferingGoal: 20,
+            bufferingGoal: 120
+        }
+    });
 
     var syncedVideo = document.getElementById("synced-video");
     var syncedPlayer = new shaka.Player(syncedVideo);
+    syncedPlayer.configure({
+        streaming: {
+            rebufferingGoal: 20,
+            bufferingGoal: 120
+        }
+    });
 
     videoSynchronizer.sync(mainVideo, [syncedVideo]);
 
